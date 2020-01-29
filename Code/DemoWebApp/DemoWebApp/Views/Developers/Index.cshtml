@@ -1,0 +1,165 @@
+﻿@model IEnumerable<DemoWebApp.Models.Developer>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<h2>List Of Developers</h2>
+
+<p style="float:right">
+    <a href="javascript:void(0);" id="btnCreate" class="btn btn-success">Create New</a>
+</p>
+<table class="table" >
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Age)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.JobTitle)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Name)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Age)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.JobTitle)
+                    </td>
+                    <td>
+                        <a href="javascript:void(0);" id="aDelete" ><i data-id="@item.Id" class="fa fa-trash-alt text-danger"></i></a>
+                    </td>
+                </tr>
+            }
+        
+    </tbody>
+    <tfoot style="display:none;">
+        <tr>
+            <td><input type="text" id="txtName" placeholder="Developer's Name" class="form-control" /></td>
+            <td><input type="text" id="txtAge" placeholder="Developer's Age" class="form-control" /></td>
+            <td><select id="txtJob"  class="form-control"><option>Jr. Software Engineer</option>
+                                                          <option>Sr. Software Engineer</option>
+                                                           <option>Project Manager</option></select></td>
+            <td><a href="javascript:void(0);" id="aAdd"><i class="fa fa-plus"></i></a></td>
+        </tr>
+        <tr><td colspan="4" align="right"><a href="javascript:void(0);" id="btnSave" class="btn btn-success">Save</a>
+                                          <a href="javascript:void(0);" id="btnCancel" class="btn btn-default">Cancel</a></td></tr>
+    </tfoot>
+</table>
+
+@section scripts
+    {
+    <script>
+        var TeamDetailPostBackURL = '/Developers/Details';
+        
+        $(function () {
+
+            $("#btnCreate").click(function () {
+                $(".table > tfoot").attr('style', 'display:visible;');    
+                $("#btnCreate").attr("disabled", true);
+            });
+
+            //end create new
+
+            $("#btnCancel").click(function () {
+                $(".table > tfoot").attr('style', 'display:none;');
+                $("#trNew").remove();
+                $("#btnCreate").attr("disabled", false);
+            });
+            //end cancel
+
+            
+            $("#btnSave").click(function ()  {
+                $(".table #trNew").each(function () {
+                    var row = $(this);
+                    let InsertData = {};
+                    InsertData = {
+                        Name:  row.find("td").eq(0).html(),
+                        Age: + row.find("td").eq(1).html(),
+                        JobTitle:  row.find("td").eq(2).html()
+                    };
+                    
+                    $.ajax({
+                        type: "POST",
+                        url: "/developers/InsertRecords",
+                        data:  InsertData,
+                        success: function (r) {
+                            row.find("td").eq(3).remove();
+                            row.append('<td><a href="javascript:void(0);" id="aDelete" ><i data-id="' + r.eId + '" class="fa fa-trash-alt text-danger"></i></a></td>');
+                        }
+                    });
+                });
+
+                $(".table > tfoot").attr('style', 'display:none;');
+                $("#btnCreate").attr("disabled", false);
+            });
+            
+
+           
+            $(".table").on("click", "#aRemove", function () {
+                $(this).closest("tr").css('background-color', 'orange');
+               
+                $(this).closest("tr").fadeOut(400, function () { $(this).closest("tr").remove();});
+            });
+
+            //end remove row
+
+            $("#aAdd").click(function () {
+                $("#txtVal1").remove();
+                if ($("#txtName").val().length == 0)
+                    $("#txtName").after('<div id="txtVal1" class="text-danger">Name is Required</div>');
+                else if ($("#txtAge").val().length == 0)
+                    $("#txtAge").after('<div id="txtVal1"  class="text-danger">Age is Required</div>');
+                else if (!$.isNumeric($("#txtAge").val()))
+                    $("#txtAge").after('<div id="txtVal1"  class="text-danger">Age must be a number</div>');  
+                    else if($("#txtAge").val() <= 18 || $("#txtAge").val() >= 51 )
+                    $("#txtAge").after('<div id="txtVal1"  class="text-danger">Age range is 18 to 50</div>');
+                else if ($("#txtJob option:selected").text() == '')
+                    $("#txtJob").after('<div id="txtVal1"  class="text-danger">Job Title is Required</div>');
+                else {
+                    var row = $(".table > tbody").append('<tr id="trNew"><td>' + $("#txtName").val() + '</td><td>' + $("#txtAge").val() + '</td><td>' + $("#txtJob").val() + '</td><td><a href="javascript:void(0);" id="aRemove"><i class="fa fa-times"></i></a></td></tr>');
+                    $("#txtName").val("");
+                    $("#txtAge").val("");
+                    $("#txtJob").val("");
+                }
+            });
+            //end add row
+            $(".table").on("click", "#aDelete", function (){
+                var removerow = $(this).closest('tr');
+                if (confirm("Are you sure to delete the record ?")) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/developers/DeletetRecords/" + $(this).find('i').attr("data-id"),
+                        contentType: "application/json; charset=utf-8",
+                        datatype: "json",
+                        success: function () {
+                            removerow.css("background-color", "orange");
+                            removerow.fadeOut('fast',
+                                function () {
+                                    removerow.remove();
+                                });
+                        },
+                        error: function () {
+                            alert("Dynamic content load failed.");
+                        }
+                    });
+                }
+            }
+            );
+        });
+    </script>
+
+}  
